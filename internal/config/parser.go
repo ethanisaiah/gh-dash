@@ -219,6 +219,24 @@ type ProjectConfig struct {
 	Number         int    `yaml:"number"                   validate:"required,gt=0"`
 	StatusField    string `yaml:"statusField,omitempty"`
 	IterationField string `yaml:"iterationField,omitempty"`
+	// StartWork configures the startWork issue key.
+	StartWork *StartWorkConfig `yaml:"startWork,omitempty"`
+}
+
+// StartWorkConfig is a command run to start working on an issue (e.g. create
+// a worktree), after which the issue's status is set. Command is a template
+// with the same variables as custom issue commands plus {{.Slug}}, a
+// kebab-case version of the title.
+type StartWorkConfig struct {
+	Command string `yaml:"command" validate:"required"`
+	Status  string `yaml:"status,omitempty"`
+}
+
+func (s StartWorkConfig) StatusName() string {
+	if s.Status == "" {
+		return "In Progress"
+	}
+	return s.Status
 }
 
 func (p ProjectConfig) StatusFieldName() string {

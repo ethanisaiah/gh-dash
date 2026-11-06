@@ -135,6 +135,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd, *IssueAction) {
 			return m, nil, &IssueAction{Type: IssueActionHandoff}
 		case key.Matches(keyMsg, keys.IssueKeys.LinkedPR):
 			return m, nil, &IssueAction{Type: IssueActionLinkedPR}
+		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.StartWork):
+			return m, nil, &IssueAction{Type: IssueActionStartWork}
 		}
 	}
 

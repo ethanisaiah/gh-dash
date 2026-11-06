@@ -1,16 +1,23 @@
 package tui
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/log/v2"
 
 	"github.com/dlvhdr/gh-dash/v4/internal/config"
 	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/issuessection"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/prssection"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/tasks"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/keys"
+	"github.com/dlvhdr/gh-dash/v4/internal/utils"
 )
 
 // linkedPRSectionPrefix marks the PR section opened by jumping from an issue
@@ -123,4 +130,62 @@ func prStateFilter(state string) string {
 	default:
 		return ""
 	}
+}
+
+type startWorkFinishedMsg struct {
+	issue  data.IssueData
+	status string
+	err    error
+}
+
+// startWork runs the configured startWork command for the current issue with
+// the TUI suspended, then sets the issue's status if the command succeeded.
+func (m *Model) startWork() tea.Cmd {
+	issue := m.currentIssue()
+	if issue == nil {
+		return nil
+	}
+	pc := m.ctx.Config.Project
+	if pc == nil || pc.StartWork == nil {
+		return m.notifyErr("Configure project.startWork.command to use this key")
+	}
+
+	input := resolveTemplateInput(&map[string]any{
+		"RepoName":    issue.GetRepoNameWithOwner(),
+		"IssueNumber": issue.Number,
+		"IssueTitle":  issue.Title,
+		"Author":      issue.Author.Login,
+		"Slug":        utils.Slugify(issue.Title, 40),
+	}, m.ctx.Config.RepoPaths, m.ctx.RepoPath)
+
+	tmpl, err := template.New("start_work").Option("missingkey=error").Parse(pc.StartWork.Command)
+	if err != nil {
+		return m.notifyErr(fmt.Sprintf("Invalid startWork command: %v", err))
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, input); err != nil {
+		return m.notifyErr(fmt.Sprintf("Invalid startWork command: %v", err))
+	}
+
+	// Keep the output on screen until enter is pressed, and keep the exit code.
+	script := buf.String() + "\n__ghd=$?\n" +
+		`printf '\n[gh-dash] exit %s - press enter to return' "$__ghd"; read __ignored; exit $__ghd`
+	log.Info("Starting work", "issue", issue.Number, "cmd", buf.String())
+
+	issueCopy, status := *issue, pc.StartWork.StatusName()
+	return tea.ExecProcess(exec.Command("sh", "-c", script), func(err error) tea.Msg {
+		return startWorkFinishedMsg{issue: issueCopy, status: status, err: err}
+	})
+}
+
+func (m *Model) onStartWorkFinished(msg startWorkFinishedMsg) tea.Cmd {
+	if msg.err != nil {
+		return m.notifyErr(fmt.Sprintf("Start work for #%d failed (%v); status unchanged",
+			msg.issue.Number, msg.err))
+	}
+	sid := tasks.SectionIdentifier{}
+	if m.ctx.View == config.IssuesView {
+		sid = tasks.SectionIdentifier{Id: m.currSectionId, Type: issuessection.SectionType}
+	}
+	return tasks.SetIssueProjectField(m.ctx, sid, &msg.issue, tasks.ProjectFieldStatus, msg.status)
 }
