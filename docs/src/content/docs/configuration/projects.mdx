@@ -1,0 +1,62 @@
+---
+title: Projects
+---
+
+# GitHub Projects (`project`)
+
+Connects gh-dash to one GitHub Projects (v2) board. Fields, options and
+iterations are looked up by **name** when gh-dash runs, so renaming an option
+on GitHub only needs a config change, and IDs are never configured.
+
+```yaml
+project:
+  owner: stellarissecurity   # org or user that owns the project
+  number: 1
+  statusField: Status        # optional, default "Status" (single select)
+  iterationField: Iteration  # optional, default "Iteration"
+  startWork:                 # optional, for the startWork key
+    command: cd {{.RepoPath}} && pnpm wt new {{.IssueNumber}} {{.Slug}}
+    status: In Progress      # optional, default "In Progress"
+```
+
+The `gh` token needs the `project` scope (`gh auth refresh -s project`).
+
+## What it adds
+
+- **Issue list and preview:** Status (in the option's color) and Iteration.
+  Hide the columns with the `projectStatus` and `iteration` layout keys.
+- **Issue keys** (rebind with `builtin:` in `keybindings.issues`):
+
+  | Builtin            | Default | Action                                                            |
+  | ------------------ | ------- | ----------------------------------------------------------------- |
+  | `projectStatus`    | `v`     | Pick a Status. Adds the issue to the project if it isn't in it.   |
+  | `projectIteration` | `I`     | Pick an Iteration (current and upcoming, or `(none)`).            |
+  | `handoff`          | `V`     | Pick a Status, then the new assignees, and save both.             |
+  | `linkedPr`         | `O`     | Open the PR linked to the issue in the PRs view.                  |
+  | `startWork`        | `W`     | Run `startWork.command`, then set `startWork.status`.             |
+  | `images`           | `i`     | Open an image from the issue body with `kitten icat` or a browser. |
+
+  In pickers, type to filter, use ↑/↓, and press enter.
+
+- **Project sections:** an issues section with `source: project` loads the
+  project's issues instead of searching, grouped under Status headers.
+  `filters` uses the project filter syntax from github.com:
+
+  ```yaml
+  issuesSections:
+    - title: Board
+      source: project
+      filters: -status:Merged
+      limit: 100
+    - title: My turn
+      source: project
+      filters: assignee:@me -status:Merged
+  ```
+
+## `startWork.command` variables
+
+The same as custom issue commands (`RepoName`, `RepoPath`, `IssueNumber`,
+`IssueTitle`, `Author`) plus `Slug`, the title in kebab-case (at most 40
+characters). `RepoPath` comes from [`repoPaths`](../repo-paths). The TUI is
+suspended while the command runs and the output stays on screen until you
+press enter. The status is only changed if the command succeeds.
