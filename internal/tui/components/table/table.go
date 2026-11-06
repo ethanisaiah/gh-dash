@@ -27,6 +27,8 @@ type Model struct {
 	dimensions     constants.Dimensions
 	rowsViewport   listviewport.Model
 	ContentHeight  int // Optional: override content height (0 = use default from config)
+	// headerRows are rows that group the rows below them; the cursor skips them.
+	headerRows map[int]bool
 }
 
 type Column struct {
@@ -125,21 +127,40 @@ func (m *Model) GetCurrItem() int {
 }
 
 func (m *Model) PrevItem() int {
+	start := m.rowsViewport.GetCurrItem()
 	currItem := m.rowsViewport.PrevItem()
+	for m.IsHeaderRow(currItem) && currItem > 0 {
+		currItem = m.rowsViewport.PrevItem()
+	}
+	if m.IsHeaderRow(currItem) {
+		// Only headers above: stay on the first selectable row.
+		currItem = m.skipHeadersDown(start)
+	}
 	m.SyncViewPortContent()
 
 	return currItem
 }
 
 func (m *Model) NextItem() int {
+	start := m.rowsViewport.GetCurrItem()
 	currItem := m.rowsViewport.NextItem()
+	for m.IsHeaderRow(currItem) && currItem < len(m.Rows)-1 {
+		currItem = m.rowsViewport.NextItem()
+	}
+	if m.IsHeaderRow(currItem) {
+		// Only headers below: go back to where we were.
+		for m.rowsViewport.GetCurrItem() > start {
+			currItem = m.rowsViewport.PrevItem()
+		}
+	}
 	m.SyncViewPortContent()
 
 	return currItem
 }
 
 func (m *Model) FirstItem() int {
-	currItem := m.rowsViewport.FirstItem()
+	m.rowsViewport.FirstItem()
+	currItem := m.skipHeadersDown(0)
 	m.SyncViewPortContent()
 
 	return currItem
@@ -147,8 +168,31 @@ func (m *Model) FirstItem() int {
 
 func (m *Model) LastItem() int {
 	currItem := m.rowsViewport.LastItem()
+	for m.IsHeaderRow(currItem) && currItem > 0 {
+		currItem = m.rowsViewport.PrevItem()
+	}
 	m.SyncViewPortContent()
 
+	return currItem
+}
+
+// IsHeaderRow reports whether a row is a group header that cannot be selected.
+func (m *Model) IsHeaderRow(i int) bool {
+	return m.headerRows[i]
+}
+
+// skipHeadersDown moves the cursor down from row `from` until it is on a
+// selectable row, if there is one.
+func (m *Model) skipHeadersDown(from int) int {
+	currItem := m.rowsViewport.GetCurrItem()
+	for m.IsHeaderRow(currItem) && currItem < len(m.Rows)-1 {
+		currItem = m.rowsViewport.NextItem()
+	}
+	if m.IsHeaderRow(currItem) {
+		for m.rowsViewport.GetCurrItem() > from {
+			currItem = m.rowsViewport.PrevItem()
+		}
+	}
 	return currItem
 }
 
@@ -176,8 +220,18 @@ func (m *Model) SyncViewPortContent() {
 }
 
 func (m *Model) SetRows(rows []Row) {
+	m.SetRowsWithHeaders(rows, nil)
+}
+
+// SetRowsWithHeaders sets rows where the indices in headers are group headers,
+// which are rendered unselected and skipped when moving the cursor.
+func (m *Model) SetRowsWithHeaders(rows []Row, headers map[int]bool) {
 	m.Rows = rows
+	m.headerRows = headers
 	m.rowsViewport.SetNumItems(len(m.Rows))
+	if m.IsHeaderRow(m.rowsViewport.GetCurrItem()) {
+		m.skipHeadersDown(m.rowsViewport.GetCurrItem())
+	}
 	m.SyncViewPortContent()
 }
 
@@ -308,7 +362,7 @@ func (m *Model) renderBody() string {
 func (m *Model) renderRow(rowId int, headerColumns []string) string {
 	var style lipgloss.Style
 
-	if m.rowsViewport.GetCurrItem() == rowId {
+	if m.rowsViewport.GetCurrItem() == rowId && !m.IsHeaderRow(rowId) {
 		style = m.ctx.Styles.Table.SelectedCellStyle
 	} else {
 		style = m.ctx.Styles.Table.CellStyle
