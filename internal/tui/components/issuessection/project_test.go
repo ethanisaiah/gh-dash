@@ -39,8 +39,9 @@ func TestSyncRowsKeepsSelectedIssueWhenItChangesGroup(t *testing.T) {
 	thm := theme.ParseTheme(&cfg)
 	ctx := &context.ProgramContext{Config: &cfg, Theme: thm, Styles: context.InitStyles(thm)}
 
-	m := NewModel(0, ctx, config.IssuesSectionConfig{Title: "Board", Source: "project"},
-		time.Now(), time.Now())
+	m := NewModel(0, ctx, config.IssuesSectionConfig{
+		Title: "Board", Source: "project", StatusHeaders: true,
+	}, time.Now(), time.Now())
 	m.Issues = []data.IssueData{
 		{Id: "I_a", Number: 1, Url: "u/1"},
 		{Id: "I_b", Number: 2, Url: "u/2"},
@@ -89,4 +90,33 @@ func newTestTableForPosition(t *testing.T) table.Model {
 	cols := []table.Column{{Title: "Title"}}
 	return table.NewModel(ctx, constants.Dimensions{Width: 80, Height: 40},
 		time.Now(), time.Now(), cols, nil, "Issue", nil, "", false)
+}
+
+func TestProjectRowsWithoutHeadersAreSortedByStatus(t *testing.T) {
+	cfg, err := config.ParseConfig(config.Location{
+		ConfigFlag:       "../../../config/testdata/test-config.yml",
+		SkipGlobalConfig: true,
+	})
+	require.NoError(t, err)
+	thm := theme.ParseTheme(&cfg)
+	ctx := &context.ProgramContext{Config: &cfg, Theme: thm, Styles: context.InitStyles(thm)}
+
+	m := NewModel(0, ctx, config.IssuesSectionConfig{Title: "Board", Source: "project"},
+		time.Now(), time.Now())
+	m.Issues = []data.IssueData{
+		{Id: "I_x", Number: 1, Url: "x/1"},
+		{Id: "I_y", Number: 2, Url: "x/2"},
+		{Id: "I_z", Number: 3, Url: "x/3"},
+	}
+	for id, status := range map[string]string{"I_x": "Done", "I_y": "Todo", "I_z": "Done"} {
+		data.SetProjectItem(id, &data.ProjectItem{Status: &data.ProjectFieldValue{Name: status}})
+	}
+
+	m.syncRows()
+	require.Len(t, m.Table.Rows, 3, "no header rows")
+	require.Equal(t, []int{0, 2, 1}, m.rowIssues, "same-status issues are adjacent")
+	require.Equal(t, 1, m.GetCurrRow().GetNumber())
+	m.NextRow()
+	require.Equal(t, 3, m.GetCurrRow().GetNumber())
+	require.Equal(t, 2, m.currIssuePosition())
 }

@@ -39,7 +39,9 @@ The `gh` token needs the `project` scope (`gh auth refresh -s project`).
   In pickers, type to filter, use ↑/↓, and press enter.
 
 - **Project sections:** an issues section with `source: project` loads the
-  project's issues instead of searching, grouped under Status headers.
+  project's issues instead of searching, sorted by Status in the field's
+  option order. Add `statusHeaders: true` to show a header row above each
+  Status group (the cursor skips headers).
   `filters` uses the project filter syntax from github.com:
 
   ```yaml

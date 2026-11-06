@@ -29,6 +29,8 @@ type Model struct {
 	Issues []data.IssueData
 	// fromProject is set for sections that load from the configured project.
 	fromProject bool
+	// statusHeaders shows a header row above each Status group.
+	statusHeaders bool
 	// rowIssues maps table rows to indices in Issues; -1 is a group header.
 	rowIssues []int
 }
@@ -56,6 +58,7 @@ func NewModel(
 	)
 	m.Issues = []data.IssueData{}
 	m.fromProject = cfg.IsProjectSource()
+	m.statusHeaders = cfg.StatusHeaders
 
 	return m
 }

@@ -92,8 +92,8 @@ func (m *Model) renderGroupHeader(name string, count int) table.Row {
 	return row
 }
 
-// groupedRows builds the rows of a project section: a header row per status
-// followed by its issues.
+// groupedRows builds the rows of a project section: issues sorted by status,
+// each group optionally preceded by a header row.
 func (m *Model) groupedRows() ([]table.Row, map[int]bool, []int) {
 	statuses := make([]string, len(m.Issues))
 	for i, issue := range m.Issues {
@@ -106,9 +106,11 @@ func (m *Model) groupedRows() ([]table.Row, map[int]bool, []int) {
 	headers := map[int]bool{}
 	rowIssues := []int{}
 	for g, name := range names {
-		headers[len(rows)] = true
-		rows = append(rows, m.renderGroupHeader(name, len(groups[g])))
-		rowIssues = append(rowIssues, -1)
+		if m.statusHeaders {
+			headers[len(rows)] = true
+			rows = append(rows, m.renderGroupHeader(name, len(groups[g])))
+			rowIssues = append(rowIssues, -1)
+		}
 		for _, i := range groups[g] {
 			issue := issuerow.Issue{Ctx: m.Ctx, Data: m.Issues[i], ShowAuthorIcon: m.ShowAuthorIcon}
 			rows = append(rows, issue.ToTableRow())

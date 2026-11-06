@@ -101,8 +101,11 @@ type IssuesSectionConfig struct {
 	Layout  IssuesLayoutConfig `yaml:"layout,omitempty"`
 	// Source is "search" (default) or "project". A project section loads the
 	// configured project's issues, using Filters as a project filter, and
-	// groups them by Status.
+	// sorts them by Status.
 	Source string `yaml:"source,omitempty" validate:"omitempty,oneof=search project"`
+	// StatusHeaders adds a header row above each Status group in a project
+	// section. Without it, issues are still sorted by Status.
+	StatusHeaders bool `yaml:"statusHeaders,omitempty"`
 }
 
 // IsProjectSource reports whether the section loads from the configured project.
