@@ -36,6 +36,10 @@ type Model struct {
 	sectionId int
 	width     int
 	editor    cmpcontroller.Controller
+	// handoff is set while the Status picker is the first step of a
+	// "set status and reassign" handoff; handoffStatus is the picked status.
+	handoff       bool
+	handoffStatus string
 }
 
 func NewModel(ctx *context.ProgramContext) Model {
@@ -50,6 +54,10 @@ func NewModel(ctx *context.ProgramContext) Model {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd, *IssueAction) {
+	if cmd, handled := m.updateProjectInput(msg); handled {
+		return m, cmd, nil
+	}
+
 	cmd, handled := m.editor.Update(msg)
 
 	if msg, ok := msg.(tea.KeyMsg); ok && msg.String() == "ctrl+d" {
@@ -117,6 +125,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd, *IssueAction) {
 			return m, nil, &IssueAction{Type: IssueActionClose}
 		case key.Matches(keyMsg, keys.IssueKeys.Reopen):
 			return m, nil, &IssueAction{Type: IssueActionReopen}
+		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.ProjectStatus):
+			return m, nil, &IssueAction{Type: IssueActionProjectStatus}
+		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.ProjectIteration):
+			return m, nil, &IssueAction{Type: IssueActionProjectIteration}
+		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.Handoff):
+			return m, nil, &IssueAction{Type: IssueActionHandoff}
 		}
 	}
 

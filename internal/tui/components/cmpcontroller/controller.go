@@ -28,6 +28,12 @@ const (
 	ModeUnassign
 	ModeLabel
 	ModeSearch
+	// ModeProjectStatus and ModeProjectIteration pick one value of a
+	// project field; ModeHandoffAssign picks the new assignees after a
+	// status was picked in a "set status and reassign" handoff.
+	ModeProjectStatus
+	ModeProjectIteration
+	ModeHandoffAssign
 )
 
 type FetchPolicy int
@@ -56,6 +62,8 @@ type EnterOptions struct {
 	EnterFetch                       FetchPolicy
 	ConfirmDiscardOnCancel           bool
 	HideAutocompleteWhenContextEmpty bool
+	// MaxSuggestions overrides how many suggestions are visible (0 = default).
+	MaxSuggestions int
 }
 
 type Submit struct {
@@ -117,6 +125,11 @@ func (c *Controller) InputStyles() inputbox.Styles {
 
 func (c *Controller) SetInputStyles(styles inputbox.Styles) {
 	c.inputBox.SetStyles(styles)
+}
+
+// SelectedSuggestion returns the highlighted suggestion, if the list is shown.
+func (c *Controller) SelectedSuggestion() string {
+	return c.fzfSelect.Selected()
 }
 
 func (c *Controller) Mode() Mode {
@@ -189,6 +202,7 @@ func (c *Controller) Enter(opts EnterOptions) tea.Cmd {
 	c.confirmDiscard = opts.ConfirmDiscardOnCancel
 	c.showConfirmCancel = false
 	c.hideOnEmpty = opts.HideAutocompleteWhenContextEmpty
+	c.fzfSelect.SetMaxVisible(opts.MaxSuggestions)
 
 	c.inputBox.SetPrompt(opts.Prompt)
 
@@ -372,7 +386,8 @@ func (c *Controller) resetAutocompleteState() {
 
 func (c Controller) usesAutocomplete() bool {
 	switch c.mode {
-	case ModeComment, ModeApprove, ModeAssign, ModeLabel, ModeSearch:
+	case ModeComment, ModeApprove, ModeAssign, ModeLabel, ModeSearch,
+		ModeProjectStatus, ModeProjectIteration, ModeHandoffAssign:
 		return true
 	default:
 		return false

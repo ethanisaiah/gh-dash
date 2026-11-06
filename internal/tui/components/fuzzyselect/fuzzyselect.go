@@ -103,12 +103,23 @@ func NewModel(ctx *context.ProgramContext, src Source) Model {
 		styles:     ctx.Styles.Select,
 		visible:    false,
 		selected:   0,
-		maxVisible: 4,
+		maxVisible: DefaultMaxVisible,
 		width:      30,
 		fetchState: FetchStateIdle,
 		spinner:    sp,
 		Source:     src,
 	}
+}
+
+// DefaultMaxVisible is how many suggestions are shown unless overridden.
+const DefaultMaxVisible = 4
+
+// SetMaxVisible sets how many suggestions are shown at once.
+func (m *Model) SetMaxVisible(n int) {
+	if n <= 0 {
+		n = DefaultMaxVisible
+	}
+	m.maxVisible = n
 }
 
 func (m *Model) Filter(input string, cmpCtx Context, excludeItems []string) {

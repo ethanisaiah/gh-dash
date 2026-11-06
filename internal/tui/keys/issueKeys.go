@@ -19,6 +19,9 @@ type IssueKeyMap struct {
 	Reopen               key.Binding
 	ToggleSmartFiltering key.Binding
 	ViewPRs              key.Binding
+	ProjectStatus        key.Binding
+	ProjectIteration     key.Binding
+	Handoff              key.Binding
 }
 
 var IssueKeys = IssueKeyMap{
@@ -58,6 +61,18 @@ var IssueKeys = IssueKeyMap{
 		key.WithKeys("s"),
 		key.WithHelp("s", "switch to notifications"),
 	),
+	ProjectStatus: key.NewBinding(
+		key.WithKeys("v"),
+		key.WithHelp("v", "set project status"),
+	),
+	ProjectIteration: key.NewBinding(
+		key.WithKeys("I"),
+		key.WithHelp("I", "set project iteration"),
+	),
+	Handoff: key.NewBinding(
+		key.WithKeys("V"),
+		key.WithHelp("V", "set status & reassign"),
+	),
 }
 
 func IssueFullHelp() []key.Binding {
@@ -71,6 +86,9 @@ func IssueFullHelp() []key.Binding {
 		IssueKeys.Reopen,
 		IssueKeys.ToggleSmartFiltering,
 		IssueKeys.ViewPRs,
+		IssueKeys.ProjectStatus,
+		IssueKeys.ProjectIteration,
+		IssueKeys.Handoff,
 	}
 }
 
@@ -117,6 +135,12 @@ func rebindIssueKeys(keys []config.Keybinding) error {
 			key = &IssueKeys.Reopen
 		case "viewPrs":
 			key = &IssueKeys.ViewPRs
+		case "projectStatus":
+			key = &IssueKeys.ProjectStatus
+		case "projectIteration":
+			key = &IssueKeys.ProjectIteration
+		case "handoff":
+			key = &IssueKeys.Handoff
 		default:
 			return fmt.Errorf("unknown built-in issue key: '%s'", issueKey.Builtin)
 		}

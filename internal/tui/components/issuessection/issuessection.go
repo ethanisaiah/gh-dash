@@ -154,6 +154,11 @@ func (m *Model) Update(msg tea.Msg) (section.Section, tea.Cmd) {
 			}
 		}
 
+	case tasks.UpdateProjectItemMsg:
+		// New values are in the project item cache; re-render.
+		m.SetIsLoading(false)
+		m.Table.SetRows(m.BuildRows())
+
 	case SectionIssuesFetchedMsg:
 		if m.LastFetch.TaskId == msg.TaskId {
 			if m.PageInfo != nil {

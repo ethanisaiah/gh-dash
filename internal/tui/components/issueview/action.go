@@ -12,6 +12,9 @@ const (
 	IssueActionCheckout
 	IssueActionClose
 	IssueActionReopen
+	IssueActionProjectStatus
+	IssueActionProjectIteration
+	IssueActionHandoff
 )
 
 // IssueAction represents an action to be performed on an issue.

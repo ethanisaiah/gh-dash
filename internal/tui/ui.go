@@ -530,6 +530,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, cmd
 
+			case m.ctx.Config.Project != nil && key.Matches(msg, keys.IssueKeys.ProjectStatus):
+				return m, m.openSidebarForInput(m.issueSidebar.SetIsPickingStatus)
+
+			case m.ctx.Config.Project != nil && key.Matches(msg, keys.IssueKeys.ProjectIteration):
+				return m, m.openSidebarForInput(m.issueSidebar.SetIsPickingIteration)
+
+			case m.ctx.Config.Project != nil && key.Matches(msg, keys.IssueKeys.Handoff):
+				return m, m.openSidebarForInput(m.issueSidebar.SetIsHandingOff)
+
 			case key.Matches(msg, keys.IssueKeys.ViewPRs):
 				cmds = append(cmds, m.switchSelectedView())
 			}
@@ -661,6 +670,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					case issueview.IssueActionReopen:
 						cmd = m.promptConfirmationForNotificationIssue("reopen")
 						return m, cmd
+
+					case issueview.IssueActionProjectStatus:
+						return m, m.openSidebarForInput(m.issueSidebar.SetIsPickingStatus)
+
+					case issueview.IssueActionProjectIteration:
+						return m, m.openSidebarForInput(m.issueSidebar.SetIsPickingIteration)
+
+					case issueview.IssueActionHandoff:
+						return m, m.openSidebarForInput(m.issueSidebar.SetIsHandingOff)
 					}
 				}
 
