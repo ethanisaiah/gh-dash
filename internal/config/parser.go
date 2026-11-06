@@ -200,6 +200,29 @@ type RepoConfig struct {
 	PrsRefetchIntervalSeconds      int `yaml:"prsRefetchIntervalSeconds,omitempty"`
 }
 
+// ProjectConfig points gh-dash at a GitHub Projects (v2) board. Fields are
+// looked up by name at runtime, so only names are configured here.
+type ProjectConfig struct {
+	Owner          string `yaml:"owner"                    validate:"required"`
+	Number         int    `yaml:"number"                   validate:"required,gt=0"`
+	StatusField    string `yaml:"statusField,omitempty"`
+	IterationField string `yaml:"iterationField,omitempty"`
+}
+
+func (p ProjectConfig) StatusFieldName() string {
+	if p.StatusField == "" {
+		return "Status"
+	}
+	return p.StatusField
+}
+
+func (p ProjectConfig) IterationFieldName() string {
+	if p.IterationField == "" {
+		return "Iteration"
+	}
+	return p.IterationField
+}
+
 type Keybinding struct {
 	Key     string `yaml:"key"`
 	Command string `yaml:"command,omitempty"`
@@ -325,6 +348,7 @@ type Config struct {
 	Defaults                 Defaults                     `yaml:"defaults"`
 	Keybindings              Keybindings                  `yaml:"keybindings"`
 	RepoPaths                map[string]string            `yaml:"repoPaths"`
+	Project                  *ProjectConfig               `yaml:"project,omitempty"         validate:"omitempty"`
 	Theme                    *ThemeConfig                 `yaml:"theme,omitempty"           validate:"omitempty"`
 	Pager                    Pager                        `yaml:"pager"`
 	ConfirmQuit              bool                         `yaml:"confirmQuit"`

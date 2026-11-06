@@ -14,6 +14,7 @@ import (
 )
 
 type IssueData struct {
+	Id     string
 	Number int
 	Title  string
 	Body   string
