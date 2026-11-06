@@ -258,7 +258,11 @@ func init() {
 		}
 
 		p := tea.NewProgram(&model)
-		if _, err := p.Run(); err != nil {
+		_, err = p.Run()
+		if seq := model.ProgramStatusExitSequence(); seq != "" {
+			fmt.Print(seq)
+		}
+		if err != nil {
 			fmt.Printf("%+v\n", err)
 			log.Fatal("fatal error during run", "err", err)
 		}

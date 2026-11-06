@@ -370,21 +370,24 @@ type ThemeConfig struct {
 }
 
 type Config struct {
-	Include                  []string                     `yaml:"include,omitempty"`
-	PRSections               []PrsSectionConfig           `yaml:"prSections"`
-	IssuesSections           []IssuesSectionConfig        `yaml:"issuesSections"`
-	NotificationsSections    []NotificationsSectionConfig `yaml:"notificationsSections"`
-	Repo                     RepoConfig                   `yaml:"repo,omitempty"`
-	Defaults                 Defaults                     `yaml:"defaults"`
-	Keybindings              Keybindings                  `yaml:"keybindings"`
-	RepoPaths                map[string]string            `yaml:"repoPaths"`
-	Project                  *ProjectConfig               `yaml:"project,omitempty"         validate:"omitempty"`
-	Theme                    *ThemeConfig                 `yaml:"theme,omitempty"           validate:"omitempty"`
-	Pager                    Pager                        `yaml:"pager"`
-	ConfirmQuit              bool                         `yaml:"confirmQuit"`
-	ShowAuthorIcons          bool                         `yaml:"showAuthorIcons,omitempty"`
-	SmartFilteringAtLaunch   bool                         `yaml:"smartFilteringAtLaunch"                         default:"true"`
-	IncludeReadNotifications bool                         `yaml:"includeReadNotifications"                       default:"true"`
+	Include               []string                     `yaml:"include,omitempty"`
+	PRSections            []PrsSectionConfig           `yaml:"prSections"`
+	IssuesSections        []IssuesSectionConfig        `yaml:"issuesSections"`
+	NotificationsSections []NotificationsSectionConfig `yaml:"notificationsSections"`
+	Repo                  RepoConfig                   `yaml:"repo,omitempty"`
+	Defaults              Defaults                     `yaml:"defaults"`
+	Keybindings           Keybindings                  `yaml:"keybindings"`
+	RepoPaths             map[string]string            `yaml:"repoPaths"`
+	Project               *ProjectConfig               `yaml:"project,omitempty"         validate:"omitempty"`
+	// ProgramStatusApp, when set, is reported as the app name over the Program
+	// Status Protocol (OSC 7501) so multiplexers like Rex can show an icon.
+	ProgramStatusApp         string       `yaml:"programStatusApp,omitempty"`
+	Theme                    *ThemeConfig `yaml:"theme,omitempty"           validate:"omitempty"`
+	Pager                    Pager        `yaml:"pager"`
+	ConfirmQuit              bool         `yaml:"confirmQuit"`
+	ShowAuthorIcons          bool         `yaml:"showAuthorIcons,omitempty"`
+	SmartFilteringAtLaunch   bool         `yaml:"smartFilteringAtLaunch"                         default:"true"`
+	IncludeReadNotifications bool         `yaml:"includeReadNotifications"                       default:"true"`
 }
 
 type configError struct {

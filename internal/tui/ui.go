@@ -51,24 +51,26 @@ import (
 )
 
 type Model struct {
-	keys             *keys.KeyMap
-	sidebar          sidebar.Model
-	prView           prview.Model
-	issueSidebar     issueview.Model
-	branchSidebar    branchsidebar.Model
-	notificationView notificationview.Model
-	currSectionId    int
-	footer           footer.Model
-	repo             section.Section
-	prs              []section.Section
-	issues           []section.Section
-	notifications    []section.Section
-	tabs             tabs.Model
-	ctx              *context.ProgramContext
-	taskSpinner      spinner.Model
-	tasks            map[string]context.Task
-	positionOverride string // "" means no override, "right" or "bottom"
-	mode             Mode
+	// programStatusReported is set once an OSC 7501 report was sent.
+	programStatusReported bool
+	keys                  *keys.KeyMap
+	sidebar               sidebar.Model
+	prView                prview.Model
+	issueSidebar          issueview.Model
+	branchSidebar         branchsidebar.Model
+	notificationView      notificationview.Model
+	currSectionId         int
+	footer                footer.Model
+	repo                  section.Section
+	prs                   []section.Section
+	issues                []section.Section
+	notifications         []section.Section
+	tabs                  tabs.Model
+	ctx                   *context.ProgramContext
+	taskSpinner           spinner.Model
+	tasks                 map[string]context.Task
+	positionOverride      string // "" means no override, "right" or "bottom"
+	mode                  Mode
 }
 
 type Mode int
@@ -734,6 +736,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case initMsg:
 		m.ctx.Config = &msg.Config
+		cmds = append(cmds, m.reportProgramStatus())
 		m.ctx.RepoUrl = msg.RepoUrl
 		m.ctx.Theme = theme.ParseTheme(m.ctx.Config)
 		m.ctx.Styles = context.InitStyles(m.ctx.Theme)
