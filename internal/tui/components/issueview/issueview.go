@@ -133,6 +133,10 @@ func (m Model) View() string {
 	s.WriteString("\n\n")
 	s.WriteString(m.renderStatusPill())
 	s.WriteString("\n\n")
+	if project := m.renderProject(); project != "" {
+		s.WriteString(project)
+		s.WriteString("\n\n")
+	}
 	s.WriteString(m.renderAuthor())
 	s.WriteString("\n\n")
 
@@ -190,6 +194,50 @@ func (m *Model) renderStatusPill() string {
 		BorderForeground(bgColor).
 		Background(bgColor).
 		Render(content)
+}
+
+// renderProject shows the issue's Status and Iteration in the configured
+// project, or that it is not in the project yet.
+func (m *Model) renderProject() string {
+	project := common.ConfiguredProject(m.ctx.Config)
+	if project == nil {
+		return ""
+	}
+	faint := lipgloss.NewStyle().Foreground(m.ctx.Theme.FaintText)
+	item, fetched := data.GetProjectItem(m.issue.Data.Id)
+	if !fetched {
+		return ""
+	}
+	if item == nil {
+		return faint.Render(fmt.Sprintf(" Not in %s", project.Title))
+	}
+
+	pillStyle := m.ctx.Styles.PrView.PillStyle
+	status := item.StatusName()
+	var statusPart string
+	if status == "" {
+		statusPart = faint.Render("No status")
+	} else {
+		c := common.ProjectOptionColor(m.ctx.Config, status)
+		if c == nil {
+			c = m.ctx.Theme.FaintText
+		}
+		statusPart = pillStyle.BorderForeground(c).Background(c).Render(status)
+	}
+
+	iteration := item.IterationTitle()
+	if iteration == "" {
+		iteration = faint.Render("no iteration")
+	} else {
+		iteration = lipgloss.NewStyle().Foreground(m.ctx.Theme.PrimaryText).Render(iteration)
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Center,
+		faint.Render(" "+project.Title+" "),
+		statusPart,
+		faint.Render(" ⋅ 󰃭 "),
+		iteration,
+	)
 }
 
 func (m *Model) renderAuthor() string {

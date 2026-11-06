@@ -7,6 +7,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/table"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
@@ -26,6 +27,8 @@ func (issue *Issue) ToTableRow() table.Row {
 		issue.renderTitle(),
 		issue.renderOpenedBy(),
 		issue.renderAssignees(),
+		issue.renderProjectStatus(),
+		issue.renderIteration(),
 		issue.renderNumComments(),
 		issue.renderNumReactions(),
 		issue.renderUpdateAt(),
@@ -103,4 +106,22 @@ func (issue *Issue) renderNumComments() string {
 
 func (issue *Issue) renderNumReactions() string {
 	return issue.getTextStyle().Render(fmt.Sprintf("%d", issue.Data.Reactions.TotalCount))
+}
+
+func (issue *Issue) projectItem() *data.ProjectItem {
+	item, _ := data.GetProjectItem(issue.Data.Id)
+	return item
+}
+
+func (issue *Issue) renderProjectStatus() string {
+	status := issue.projectItem().StatusName()
+	style := issue.getTextStyle()
+	if c := common.ProjectOptionColor(issue.Ctx.Config, status); c != nil {
+		style = style.Foreground(c)
+	}
+	return style.Render(status)
+}
+
+func (issue *Issue) renderIteration() string {
+	return issue.getTextStyle().Render(issue.projectItem().IterationTitle())
 }

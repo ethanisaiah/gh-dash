@@ -176,6 +176,9 @@ type IssuesLayoutConfig struct {
 	Assignees   ColumnConfig `yaml:"assignees,omitempty"`
 	Comments    ColumnConfig `yaml:"comments,omitempty"`
 	Reactions   ColumnConfig `yaml:"reactions,omitempty"`
+	// Project columns are shown only when a `project` is configured.
+	ProjectStatus ColumnConfig `yaml:"projectStatus,omitempty"`
+	Iteration     ColumnConfig `yaml:"iteration,omitempty"`
 }
 
 type LayoutConfig struct {

@@ -7,9 +7,11 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/log/v2"
 
 	"github.com/dlvhdr/gh-dash/v4/internal/config"
 	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/issuerow"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/table"
@@ -211,6 +213,10 @@ func GetSectionColumns(
 		dLayout.Reactions,
 		sLayout.Reactions,
 	)
+	projectStatusLayout := projectColumnLayout(ctx,
+		config.MergeColumnConfigs(dLayout.ProjectStatus, sLayout.ProjectStatus), 14)
+	iterationLayout := projectColumnLayout(ctx,
+		config.MergeColumnConfigs(dLayout.Iteration, sLayout.Iteration), 14)
 
 	return []table.Column{
 		{
@@ -239,6 +245,16 @@ func GetSectionColumns(
 			Hidden: assigneesLayout.Hidden,
 		},
 		{
+			Title:  "Status",
+			Width:  projectStatusLayout.Width,
+			Hidden: projectStatusLayout.Hidden,
+		},
+		{
+			Title:  "Iteration",
+			Width:  iterationLayout.Width,
+			Hidden: iterationLayout.Hidden,
+		},
+		{
 			Title:  constants.CommentsIcon,
 			Width:  &issueNumCommentsCellWidth,
 			Hidden: commentsLayout.Hidden,
@@ -259,6 +275,22 @@ func GetSectionColumns(
 			Hidden: createdAtLayout.Hidden,
 		},
 	}
+}
+
+// projectColumnLayout hides project columns unless a project is configured and
+// gives them a default width.
+func projectColumnLayout(
+	ctx *context.ProgramContext,
+	layout config.ColumnConfig,
+	defaultWidth int,
+) config.ColumnConfig {
+	if ctx.Config.Project == nil {
+		layout.Hidden = utils.BoolPtr(true)
+	}
+	if layout.Width == nil {
+		layout.Width = &defaultWidth
+	}
+	return layout
 }
 
 func (m Model) BuildRows() []table.Row {
@@ -331,6 +363,16 @@ func (m *Model) FetchNextPageSectionRows() []tea.Cmd {
 				SectionType: m.Type,
 				TaskId:      taskId,
 				Err:         err,
+			}
+		}
+		if pc := m.Ctx.Config.Project; pc != nil {
+			ids := make([]string, 0, len(res.Issues))
+			for _, issue := range res.Issues {
+				ids = append(ids, issue.Id)
+			}
+			// Project data is an extra: show the issues even if it fails.
+			if _, err := common.LoadProjectItems(pc, ids); err != nil {
+				log.Warn("Failed loading project items", "err", err)
 			}
 		}
 

@@ -212,6 +212,13 @@ func SetProjectItem(contentId string, item *ProjectItem) {
 	projectStore.items[contentId] = *item
 }
 
+// CachedProject returns a project loaded earlier by FetchProject, or nil.
+func CachedProject(owner string, number int) *Project {
+	projectStore.RLock()
+	defer projectStore.RUnlock()
+	return projectStore.projects[fmt.Sprintf("%s/%d", owner, number)]
+}
+
 func graphQLClient() (*gh.GraphQLClient, error) {
 	var err error
 	if client == nil {
