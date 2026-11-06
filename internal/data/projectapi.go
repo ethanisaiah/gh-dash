@@ -8,6 +8,7 @@ import (
 
 	"charm.land/log/v2"
 	gh "github.com/cli/go-gh/v2/pkg/api"
+	graphql "github.com/cli/shurcooL-graphql"
 )
 
 // ProjectOption is one option of a single-select project field.
@@ -448,4 +449,101 @@ func UpdateProjectItemField(projectId, itemId string, u ProjectFieldUpdate) erro
   }
 }`, vars, &res)
 	}
+}
+
+type projectIssuesQuery struct {
+	Node struct {
+		ProjectV2 struct {
+			Items struct {
+				Nodes []struct {
+					Id     string
+					Status struct {
+						SingleSelect struct {
+							OptionId string
+							Name     string
+						} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+					} `graphql:"status: fieldValueByName(name: $statusField)"`
+					Iteration struct {
+						Iteration struct {
+							IterationId string
+							Title       string
+							StartDate   string
+							Duration    int
+						} `graphql:"... on ProjectV2ItemFieldIterationValue"`
+					} `graphql:"iteration: fieldValueByName(name: $iterationField)"`
+					Content struct {
+						Issue IssueData `graphql:"... on Issue"`
+					}
+				}
+				TotalCount int
+				PageInfo   PageInfo
+			} `graphql:"items(first: $limit, after: $endCursor, query: $query)"`
+		} `graphql:"... on ProjectV2"`
+	} `graphql:"node(id: $projectId)"`
+}
+
+// FetchProjectIssues loads the issues of a project matching a project filter
+// (the same syntax as the filter bar on github.com, e.g. `-status:Merged
+// assignee:@me`). Pull requests and draft issues are skipped. Each issue's
+// project item is cached.
+func FetchProjectIssues(
+	project *Project,
+	statusField, iterationField string,
+	filter string,
+	limit int,
+	pageInfo *PageInfo,
+) (IssuesResponse, error) {
+	c, err := graphQLClient()
+	if err != nil {
+		return IssuesResponse{}, err
+	}
+
+	var endCursor *graphql.String
+	if pageInfo != nil {
+		endCursor = (*graphql.String)(&pageInfo.EndCursor)
+	}
+	query := strings.TrimSpace("is:issue " + filter)
+	variables := map[string]any{
+		"projectId":      graphql.ID(project.Id),
+		"statusField":    graphql.String(statusField),
+		"iterationField": graphql.String(iterationField),
+		"query":          graphql.String(query),
+		"limit":          graphql.Int(limit),
+		"endCursor":      endCursor,
+	}
+	var res projectIssuesQuery
+	log.Debug("Fetching project issues", "project", project.Title, "query", query)
+	if err := c.Query("ProjectIssues", &res, variables); err != nil {
+		return IssuesResponse{}, err
+	}
+
+	items := res.Node.ProjectV2.Items
+	issues := make([]IssueData, 0, len(items.Nodes))
+	projectStore.Lock()
+	for _, node := range items.Nodes {
+		issue := node.Content.Issue
+		if issue.Id == "" {
+			continue
+		}
+		item := ProjectItem{ItemId: node.Id}
+		if s := node.Status.SingleSelect; s.OptionId != "" {
+			item.Status = &ProjectFieldValue{Id: s.OptionId, Name: s.Name}
+		}
+		if it := node.Iteration.Iteration; it.IterationId != "" {
+			item.Iteration = &ProjectFieldValue{
+				Id: it.IterationId, Name: it.Title, StartDate: it.StartDate, Duration: it.Duration,
+			}
+		}
+		projectStore.fetched[issue.Id] = true
+		projectStore.items[issue.Id] = item
+		issues = append(issues, issue)
+	}
+	projectStore.Unlock()
+	log.Info("Fetched project issues", "project", project.Title, "count", len(issues))
+
+	return IssuesResponse{
+		Issues:     issues,
+		TotalCount: items.TotalCount,
+		PageInfo:   items.PageInfo,
+	}, nil
 }

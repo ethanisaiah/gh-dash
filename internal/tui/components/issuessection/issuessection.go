@@ -27,6 +27,10 @@ const SectionType = "issue"
 type Model struct {
 	section.BaseModel
 	Issues []data.IssueData
+	// fromProject is set for sections that load from the configured project.
+	fromProject bool
+	// rowIssues maps table rows to indices in Issues; -1 is a group header.
+	rowIssues []int
 }
 
 func NewModel(
@@ -51,6 +55,7 @@ func NewModel(
 		},
 	)
 	m.Issues = []data.IssueData{}
+	m.fromProject = cfg.IsProjectSource()
 
 	return m
 }
@@ -149,7 +154,7 @@ func (m *Model) Update(msg tea.Msg) (section.Section, tea.Cmd) {
 				}
 				m.Issues[i] = currIssue
 				m.SetIsLoading(false)
-				m.Table.SetRows(m.BuildRows())
+				m.syncRows()
 				break
 			}
 		}
@@ -157,7 +162,7 @@ func (m *Model) Update(msg tea.Msg) (section.Section, tea.Cmd) {
 	case tasks.UpdateProjectItemMsg:
 		// New values are in the project item cache; re-render.
 		m.SetIsLoading(false)
-		m.Table.SetRows(m.BuildRows())
+		m.syncRows()
 
 	case SectionIssuesFetchedMsg:
 		if m.LastFetch.TaskId == msg.TaskId {
@@ -169,7 +174,7 @@ func (m *Model) Update(msg tea.Msg) (section.Section, tea.Cmd) {
 			m.TotalCount = msg.TotalCount
 			m.SetIsLoading(false)
 			m.PageInfo = &msg.PageInfo
-			m.Table.SetRows(m.BuildRows())
+			m.syncRows()
 			m.UpdateLastUpdated(time.Now())
 			m.UpdateTotalItemsCount(m.TotalCount)
 		}
@@ -299,6 +304,10 @@ func projectColumnLayout(
 }
 
 func (m Model) BuildRows() []table.Row {
+	if m.fromProject {
+		rows, _, _ := m.groupedRows()
+		return rows
+	}
 	var rows []table.Row
 	for _, currIssue := range m.Issues {
 		issueModel := issuerow.Issue{Ctx: m.Ctx, Data: currIssue, ShowAuthorIcon: m.ShowAuthorIcon}
@@ -318,6 +327,12 @@ func (m *Model) NumRows() int {
 
 func (m *Model) GetCurrRow() data.RowData {
 	idx := m.Table.GetCurrItem()
+	if m.rowIssues != nil {
+		if idx < 0 || idx >= len(m.rowIssues) {
+			return nil
+		}
+		idx = m.rowIssues[idx]
+	}
 	if idx < 0 || idx >= len(m.Issues) {
 		return nil
 	}
@@ -361,7 +376,13 @@ func (m *Model) FetchNextPageSectionRows() []tea.Cmd {
 		if limit == nil {
 			limit = &m.Ctx.Config.Defaults.IssuesLimit
 		}
-		res, err := data.FetchIssues(m.GetFilters(), *limit, m.PageInfo)
+		var res data.IssuesResponse
+		var err error
+		if m.fromProject {
+			res, err = m.fetchProjectIssues(*limit)
+		} else {
+			res, err = data.FetchIssues(m.GetFilters(), *limit, m.PageInfo)
+		}
 		if err != nil {
 			return constants.TaskFinishedMsg{
 				SectionId:   m.Id,
@@ -370,7 +391,7 @@ func (m *Model) FetchNextPageSectionRows() []tea.Cmd {
 				Err:         err,
 			}
 		}
-		if pc := m.Ctx.Config.Project; pc != nil {
+		if pc := m.Ctx.Config.Project; pc != nil && !m.fromProject {
 			ids := make([]string, 0, len(res.Issues))
 			for _, issue := range res.Issues {
 				ids = append(ids, issue.Id)

@@ -99,6 +99,15 @@ type IssuesSectionConfig struct {
 	Filters string
 	Limit   *int               `yaml:"limit,omitempty"`
 	Layout  IssuesLayoutConfig `yaml:"layout,omitempty"`
+	// Source is "search" (default) or "project". A project section loads the
+	// configured project's issues, using Filters as a project filter, and
+	// groups them by Status.
+	Source string `yaml:"source,omitempty" validate:"omitempty,oneof=search project"`
+}
+
+// IsProjectSource reports whether the section loads from the configured project.
+func (cfg IssuesSectionConfig) IsProjectSource() bool {
+	return cfg.Source == "project"
 }
 
 type NotificationsSectionConfig struct {
