@@ -158,3 +158,19 @@ func (m *Model) moveCursorTo(row int) {
 		}
 	}
 }
+
+// currIssuePosition is the 1-based position of the selected issue among the
+// issues, not counting group header rows.
+func (m *Model) currIssuePosition() int {
+	row := m.Table.GetCurrItem()
+	if m.rowIssues == nil {
+		return row + 1
+	}
+	pos := 0
+	for i := 0; i <= row && i < len(m.rowIssues); i++ {
+		if m.rowIssues[i] >= 0 {
+			pos++
+		}
+	}
+	return pos
+}

@@ -8,6 +8,8 @@ import (
 
 	"github.com/dlvhdr/gh-dash/v4/internal/config"
 	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/table"
+	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
 	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
 )
@@ -64,4 +66,27 @@ func TestSyncRowsKeepsSelectedIssueWhenItChangesGroup(t *testing.T) {
 	m.syncRows()
 	require.Equal(t, 2, m.GetCurrRow().GetNumber(), "cursor follows the issue")
 	require.Equal(t, 3, m.Table.GetCurrItem())
+}
+
+func TestCurrIssuePositionSkipsHeaders(t *testing.T) {
+	m := Model{rowIssues: []int{-1, 0, 1, -1, 2}}
+	m.Table = newTestTableForPosition(t)
+	rows := []table.Row{{"A"}, {"a1"}, {"a2"}, {"B"}, {"b1"}}
+	m.Table.SetRowsWithHeaders(rows, map[int]bool{0: true, 3: true})
+	m.Table.LastItem()
+	require.Equal(t, 3, m.currIssuePosition())
+}
+
+func newTestTableForPosition(t *testing.T) table.Model {
+	t.Helper()
+	cfg, err := config.ParseConfig(config.Location{
+		ConfigFlag:       "../../../config/testdata/test-config.yml",
+		SkipGlobalConfig: true,
+	})
+	require.NoError(t, err)
+	thm := theme.ParseTheme(&cfg)
+	ctx := context.ProgramContext{Config: &cfg, Theme: thm, Styles: context.InitStyles(thm)}
+	cols := []table.Column{{Title: "Title"}}
+	return table.NewModel(ctx, constants.Dimensions{Width: 80, Height: 40},
+		time.Now(), time.Now(), cols, nil, "Issue", nil, "", false)
 }

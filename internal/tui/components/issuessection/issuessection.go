@@ -517,9 +517,9 @@ func (m Model) GetPagerContent() string {
 			constants.WaitingIcon,
 			m.LastUpdated().Format("01/02 15:04:05"),
 			m.SingularForm,
-			m.Table.GetCurrItem()+1,
+			m.currIssuePosition(),
 			m.TotalCount,
-			len(m.Table.Rows),
+			len(m.Issues),
 		)
 	}
 	pager := m.Ctx.Styles.ListViewPort.PagerStyle.Render(pagerContent)
