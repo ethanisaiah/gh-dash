@@ -23,7 +23,7 @@ const (
 
 func isProjectPickerMode(mode cmpcontroller.Mode) bool {
 	return mode == cmpcontroller.ModeProjectStatus || mode == cmpcontroller.ModeProjectIteration ||
-		mode == cmpcontroller.ModeLinkedPR
+		mode == cmpcontroller.ModeLinkedPR || mode == cmpcontroller.ModeImage
 }
 
 func (m *Model) projectItem() *data.ProjectItem {
@@ -195,6 +195,9 @@ func (m *Model) submitProjectInput(mode cmpcontroller.Mode, value string) tea.Cm
 	case cmpcontroller.ModeLinkedPR:
 		return m.submitLinkedPR(value)
 
+	case cmpcontroller.ModeImage:
+		return m.submitImage(value)
+
 	case cmpcontroller.ModeProjectIteration:
 		if value == "" {
 			return nil
@@ -225,6 +228,7 @@ func (m *Model) updateProjectInput(msg tea.Msg) (tea.Cmd, bool) {
 		m.handoff = false
 		m.handoffStatus = ""
 		m.linkedPRs = nil
+		m.images = nil
 		return nil, false
 	default:
 		return nil, false

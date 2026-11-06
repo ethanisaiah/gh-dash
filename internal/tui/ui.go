@@ -545,6 +545,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case m.ctx.Config.Project != nil && key.Matches(msg, keys.IssueKeys.StartWork):
 				return m, m.startWork()
 
+			case key.Matches(msg, keys.IssueKeys.Images):
+				return m, m.openIssueImages()
+
 			case key.Matches(msg, keys.IssueKeys.ViewPRs):
 				cmds = append(cmds, m.switchSelectedView())
 			}
@@ -691,6 +694,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					case issueview.IssueActionStartWork:
 						return m, m.startWork()
+
+					case issueview.IssueActionImages:
+						return m, m.openIssueImages()
 					}
 				}
 
@@ -935,6 +941,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case startWorkFinishedMsg:
 		cmds = append(cmds, m.onStartWorkFinished(msg))
+
+	case issueview.ImageChosenMsg:
+		cmds = append(cmds, m.openImage(msg.URL))
+
+	case imageDownloadedMsg:
+		cmds = append(cmds, m.onImageDownloaded(msg))
+
+	case imageShownMsg:
+		cmds = append(cmds, m.onImageShown(msg))
 	}
 
 	m.syncProgramContext()

@@ -17,6 +17,7 @@ const (
 	IssueActionHandoff
 	IssueActionLinkedPR
 	IssueActionStartWork
+	IssueActionImages
 )
 
 // IssueAction represents an action to be performed on an issue.

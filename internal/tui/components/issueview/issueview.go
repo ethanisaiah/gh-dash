@@ -42,6 +42,8 @@ type Model struct {
 	handoffStatus string
 	// linkedPRs are the choices while picking a linked PR.
 	linkedPRs []data.LinkedPR
+	// images are the choices while picking an image to open.
+	images []utils.ImageRef
 }
 
 func NewModel(ctx *context.ProgramContext) Model {
@@ -137,6 +139,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd, *IssueAction) {
 			return m, nil, &IssueAction{Type: IssueActionLinkedPR}
 		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.StartWork):
 			return m, nil, &IssueAction{Type: IssueActionStartWork}
+		case key.Matches(keyMsg, keys.IssueKeys.Images):
+			return m, nil, &IssueAction{Type: IssueActionImages}
 		}
 	}
 
