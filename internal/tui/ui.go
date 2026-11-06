@@ -539,6 +539,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case m.ctx.Config.Project != nil && key.Matches(msg, keys.IssueKeys.Handoff):
 				return m, m.openSidebarForInput(m.issueSidebar.SetIsHandingOff)
 
+			case key.Matches(msg, keys.IssueKeys.LinkedPR):
+				return m, m.fetchLinkedPRs()
+
 			case key.Matches(msg, keys.IssueKeys.ViewPRs):
 				cmds = append(cmds, m.switchSelectedView())
 			}
@@ -679,6 +682,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					case issueview.IssueActionHandoff:
 						return m, m.openSidebarForInput(m.issueSidebar.SetIsHandingOff)
+
+					case issueview.IssueActionLinkedPR:
+						return m, m.fetchLinkedPRs()
 					}
 				}
 
@@ -914,6 +920,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case constants.ErrMsg:
 		m.ctx.Error = msg.Err
+
+	case linkedPRsFetchedMsg:
+		cmds = append(cmds, m.onLinkedPRsFetched(msg))
+
+	case issueview.LinkedPRChosenMsg:
+		cmds = append(cmds, m.openLinkedPR(msg.PR))
 	}
 
 	m.syncProgramContext()

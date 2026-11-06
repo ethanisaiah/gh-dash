@@ -15,6 +15,7 @@ const (
 	IssueActionProjectStatus
 	IssueActionProjectIteration
 	IssueActionHandoff
+	IssueActionLinkedPR
 )
 
 // IssueAction represents an action to be performed on an issue.

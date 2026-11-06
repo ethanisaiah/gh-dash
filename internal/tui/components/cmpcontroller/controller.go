@@ -34,6 +34,8 @@ const (
 	ModeProjectStatus
 	ModeProjectIteration
 	ModeHandoffAssign
+	// ModeLinkedPR picks one of an issue's linked pull requests.
+	ModeLinkedPR
 )
 
 type FetchPolicy int
@@ -387,7 +389,7 @@ func (c *Controller) resetAutocompleteState() {
 func (c Controller) usesAutocomplete() bool {
 	switch c.mode {
 	case ModeComment, ModeApprove, ModeAssign, ModeLabel, ModeSearch,
-		ModeProjectStatus, ModeProjectIteration, ModeHandoffAssign:
+		ModeProjectStatus, ModeProjectIteration, ModeHandoffAssign, ModeLinkedPR:
 		return true
 	default:
 		return false

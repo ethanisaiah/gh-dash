@@ -22,7 +22,8 @@ const (
 )
 
 func isProjectPickerMode(mode cmpcontroller.Mode) bool {
-	return mode == cmpcontroller.ModeProjectStatus || mode == cmpcontroller.ModeProjectIteration
+	return mode == cmpcontroller.ModeProjectStatus || mode == cmpcontroller.ModeProjectIteration ||
+		mode == cmpcontroller.ModeLinkedPR
 }
 
 func (m *Model) projectItem() *data.ProjectItem {
@@ -191,6 +192,9 @@ func (m *Model) submitProjectInput(mode cmpcontroller.Mode, value string) tea.Cm
 		m.handoff = false
 		return tasks.HandoffIssue(m.ctx, sid, &issue, status, fuzzyselect.AllWords(value))
 
+	case cmpcontroller.ModeLinkedPR:
+		return m.submitLinkedPR(value)
+
 	case cmpcontroller.ModeProjectIteration:
 		if value == "" {
 			return nil
@@ -220,6 +224,7 @@ func (m *Model) updateProjectInput(msg tea.Msg) (tea.Cmd, bool) {
 	case "esc", "ctrl+c":
 		m.handoff = false
 		m.handoffStatus = ""
+		m.linkedPRs = nil
 		return nil, false
 	default:
 		return nil, false

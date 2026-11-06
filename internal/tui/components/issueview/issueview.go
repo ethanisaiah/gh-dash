@@ -40,6 +40,8 @@ type Model struct {
 	// "set status and reassign" handoff; handoffStatus is the picked status.
 	handoff       bool
 	handoffStatus string
+	// linkedPRs are the choices while picking a linked PR.
+	linkedPRs []data.LinkedPR
 }
 
 func NewModel(ctx *context.ProgramContext) Model {
@@ -131,6 +133,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd, *IssueAction) {
 			return m, nil, &IssueAction{Type: IssueActionProjectIteration}
 		case m.ctx.Config.Project != nil && key.Matches(keyMsg, keys.IssueKeys.Handoff):
 			return m, nil, &IssueAction{Type: IssueActionHandoff}
+		case key.Matches(keyMsg, keys.IssueKeys.LinkedPR):
+			return m, nil, &IssueAction{Type: IssueActionLinkedPR}
 		}
 	}
 

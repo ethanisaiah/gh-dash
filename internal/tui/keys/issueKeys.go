@@ -22,6 +22,7 @@ type IssueKeyMap struct {
 	ProjectStatus        key.Binding
 	ProjectIteration     key.Binding
 	Handoff              key.Binding
+	LinkedPR             key.Binding
 }
 
 var IssueKeys = IssueKeyMap{
@@ -73,6 +74,10 @@ var IssueKeys = IssueKeyMap{
 		key.WithKeys("V"),
 		key.WithHelp("V", "set status & reassign"),
 	),
+	LinkedPR: key.NewBinding(
+		key.WithKeys("O"),
+		key.WithHelp("O", "open linked PR"),
+	),
 }
 
 func IssueFullHelp() []key.Binding {
@@ -89,6 +94,7 @@ func IssueFullHelp() []key.Binding {
 		IssueKeys.ProjectStatus,
 		IssueKeys.ProjectIteration,
 		IssueKeys.Handoff,
+		IssueKeys.LinkedPR,
 	}
 }
 
@@ -141,6 +147,8 @@ func rebindIssueKeys(keys []config.Keybinding) error {
 			key = &IssueKeys.ProjectIteration
 		case "handoff":
 			key = &IssueKeys.Handoff
+		case "linkedPr":
+			key = &IssueKeys.LinkedPR
 		default:
 			return fmt.Errorf("unknown built-in issue key: '%s'", issueKey.Builtin)
 		}
